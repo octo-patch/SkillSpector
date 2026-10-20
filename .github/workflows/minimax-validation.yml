@@ -1,0 +1,38 @@
+name: MiniMax exact-head validation
+on:
+  push:
+    branches: [octo/validation-minimax-m31-20261020]
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 803b10e6d8f769dd5d9d81cf77dd0987d88d891e
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          version: '0.10.x'
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Verify source identity and pinned environment
+        run: |
+          test "$(git rev-parse HEAD)" = 803b10e6d8f769dd5d9d81cf77dd0987d88d891e
+          uv sync --frozen --extra dev
+      - name: Pinned lint and formatting
+        run: |
+          uv run --no-sync make lint
+          uv run --no-sync make format-check
+      - name: SDK HTTP serialization and provider regressions
+        run: >-
+          uv run --no-sync pytest -q
+          tests/unit/test_minimax_provider.py
+          tests/unit/test_providers.py
+          tests/unit/test_new_providers.py
+          tests/unit/test_llm_provenance.py
+          tests/unit/test_inference_usage.py
+          tests/unit/test_model_info.py
